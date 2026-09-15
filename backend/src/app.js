@@ -12,7 +12,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const exportRoutes = require('./routes/exportRoutes');
 
 const app = express();
-app.use(cors());
+app.use(cors({origin: 'https://ferno-front.onrender.com'}));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'ferno-evaluation-backend' }));
