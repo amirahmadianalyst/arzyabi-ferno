@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+backend/data/*.xlsx
+backend/data/backups/*.xlsx
+!backend/data/.gitkeep
+*.log
+.DS_Store
