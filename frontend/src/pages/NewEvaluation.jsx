@@ -21,6 +21,7 @@ export default function NewEvaluation() {
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedForm, setSelectedForm] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [evaluatedIds, setEvaluatedIds] = useState(new Set());
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
   const [notes, setNotes] = useState('');
@@ -49,10 +50,21 @@ export default function NewEvaluation() {
     }
   }
 
+  function loadEvaluatedIds(dept, formId) {
+    if (!activePeriod) return;
+    client
+      .get('/evaluations', {
+        params: { department: dept, formId, year: activePeriod.Year, month: activePeriod.Month, week: activePeriod.Week },
+      })
+      .then((res) => setEvaluatedIds(new Set(res.data.map((e) => e.Employee_ID))))
+      .catch(() => setEvaluatedIds(new Set()));
+  }
+
   function pickForm(formId, deptOverride) {
     const dept = deptOverride || selectedDept;
     setSelectedForm(formId);
     client.get(`/employees?department=${dept}`).then((res) => setEmployees(res.data));
+    loadEvaluatedIds(dept, formId);
     setStep(2);
   }
 
@@ -89,7 +101,6 @@ export default function NewEvaluation() {
         Employee_Name: selectedEmployee.Employee_Name,
         Department: selectedDept,
         Form_ID: selectedForm,
-        Year: activePeriod.Year, Month: activePeriod.Month, Week: activePeriod.Week,
         Notes: notes,
         Scores: scores,
       });
@@ -101,6 +112,7 @@ export default function NewEvaluation() {
       setNotes('');
       setStep(2);
       client.get(`/employees?department=${selectedDept}`).then((res) => setEmployees(res.data));
+      loadEvaluatedIds(selectedDept, selectedForm);
     } catch (err) {
       showToast(err.response?.data?.error || 'خطا در ثبت ارزیابی', 'error');
     } finally {
@@ -111,7 +123,21 @@ export default function NewEvaluation() {
   if (!activePeriod) {
     return (
       <Layout title="ارزیابی جدید">
-        <div className="card">دوره فعالی توسط ادمین تعیین نشده است. لطفاً با مدیر سامانه تماس بگیرید.</div>
+        <div className="loading-center"><div className="spinner" /></div>
+      </Layout>
+    );
+  }
+
+  if (user.role !== 'ADMIN' && !activePeriod.IsEvaluationDay) {
+    return (
+      <Layout title="ارزیابی جدید">
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>امروز {activePeriod.WeekdayFa} است</h3>
+          <p className="text-muted">
+            روزهای مجاز برای ثبت ارزیابی <strong>{activePeriod.AllowedDaysLabel}</strong> است.
+            لطفاً در یکی از این دو روز دوباره مراجعه کنید.
+          </p>
+        </div>
       </Layout>
     );
   }
@@ -122,7 +148,7 @@ export default function NewEvaluation() {
   return (
     <Layout
       title="ارزیابی جدید"
-      subtitle={`دوره فعال: ${activePeriod.Year} / ${activePeriod.Month} / هفته ${activePeriod.Week}`}
+      subtitle={`دوره فعال: ${activePeriod.Year} / ${activePeriod.Month} / هفته ${activePeriod.Week} — امروز ${activePeriod.WeekdayFa}${user.role === 'ADMIN' && !activePeriod.IsEvaluationDay ? ' (خارج از روزهای مجاز — دسترسی ادمین همیشه باز است)' : ''}`}
     >
       <div className="steps-bar">
         {STEPS.map((s, i) => (
@@ -168,16 +194,25 @@ export default function NewEvaluation() {
             <h3 style={{ margin: 0 }}>انتخاب پرسنل — {deptLabel} / {formLabel}</h3>
             <button className="btn btn-sm" onClick={() => setStep(availableFormsForDept.length > 1 ? 1 : 0)}>بازگشت</button>
           </div>
+          <div className="flex gap-2 mb-3">
+            <span className="pill"><span className="legend-dot legend-done" /> ارزیابی‌شده</span>
+            <span className="pill"><span className="legend-dot legend-pending" /> باقی‌مانده</span>
+          </div>
           <div className="employee-grid">
-            {employees.map((emp) => (
-              <div
-                key={emp.Employee_ID}
-                className={`employee-tile ${selectedEmployee?.Employee_ID === emp.Employee_ID ? 'selected' : ''}`}
-                onClick={() => pickEmployee(emp)}
-              >
-                {emp.Employee_Name}
-              </div>
-            ))}
+            {employees.map((emp) => {
+              const done = evaluatedIds.has(emp.Employee_ID);
+              return (
+                <div
+                  key={emp.Employee_ID}
+                  className={`employee-tile ${done ? 'done' : ''} ${selectedEmployee?.Employee_ID === emp.Employee_ID ? 'selected' : ''}`}
+                  onClick={() => pickEmployee(emp)}
+                  title={done ? 'قبلاً برای این دوره ارزیابی شده — کلیک برای ویرایش' : 'کلیک برای ارزیابی'}
+                >
+                  {done && <span className="employee-tile-check">✓</span>}
+                  {emp.Employee_Name}
+                </div>
+              );
+            })}
             {employees.length === 0 && <div className="text-muted">پرسنلی برای این بخش ثبت نشده است.</div>}
           </div>
           {duplicateInfo && (

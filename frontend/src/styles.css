@@ -293,9 +293,26 @@ tbody tr:hover { background: var(--bg-hover); }
 .employee-tile {
   padding: 16px 10px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--bg-elevated); cursor: pointer; font-weight: 600; transition: all .15s;
+  position: relative;
 }
 .employee-tile:hover { border-color: var(--primary); }
 .employee-tile.selected { background: var(--primary); color: var(--primary-contrast); border-color: var(--primary); }
+.employee-tile.done {
+  background: rgba(62,207,142,.12);
+  border-color: var(--success);
+  color: var(--success);
+  position: relative;
+}
+.employee-tile.done.selected { background: var(--success); color: #05261a; border-color: var(--success); }
+.employee-tile-check {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--success); color: #05261a; font-size: 11px; font-weight: 900;
+  position: absolute; top: 6px; left: 6px;
+}
+.legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 6px; vertical-align: middle; }
+.legend-done { background: var(--success); }
+.legend-pending { background: var(--border); border: 1px solid var(--text-muted); }
 
 .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
 .dept-tile {

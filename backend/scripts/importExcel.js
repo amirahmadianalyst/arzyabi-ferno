@@ -87,19 +87,9 @@ async function main() {
     console.log('ℹ️  کاربران ارزیاب نمونه قبلاً وجود دارند.');
   }
 
-  // --- Period اولیه ---
-  const existingPeriods = await readSheet('Periods');
-  if (existingPeriods.length === 0) {
-    await appendRows('Periods', {
-      Period_ID: newId('period'),
-      Year: 1405, Month: 'شهریور', Week: 2,
-      Is_Active: 'true',
-      Created_At: new Date().toISOString(),
-    });
-    console.log('✅ Period اولیه (1405 / شهریور / هفته 2) ایجاد و فعال شد.');
-  } else {
-    console.log('ℹ️  Periodها قبلاً وجود دارند.');
-  }
+  // --- Period ---
+  // توجه: از این پس سال/ماه/هفته به‌صورت خودکار از تاریخ واقعی (وقت تهران) محاسبه
+  // می‌شود (backend/src/utils/persianDate.js) و نیازی به ساخت Period دستی نیست.
 
   console.log('\n🎉 Import با موفقیت انجام شد.');
 }

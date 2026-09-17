@@ -1,74 +1,56 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import Layout from '../components/Layout.jsx';
-import { useToast } from '../ToastContext.jsx';
-
-const MONTHS = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 
 export default function AdminPeriods() {
-  const { showToast } = useToast();
-  const [periods, setPeriods] = useState([]);
-  const [year, setYear] = useState(1405);
-  const [month, setMonth] = useState('شهریور');
-  const [week, setWeek] = useState(1);
-  const [saving, setSaving] = useState(false);
+  const [data, setData] = useState(null);
 
-  function load() {
-    client.get('/periods').then((res) => setPeriods(res.data));
-  }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    client.get('/periods').then((res) => setData(res.data));
+  }, []);
 
-  async function setActive(e) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await client.post('/periods', { Year: year, Month: month, Week: week });
-      showToast('دوره فعال با موفقیت تغییر کرد.');
-      load();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'خطا در تعیین دوره', 'error');
-    } finally {
-      setSaving(false);
-    }
-  }
+  if (!data) return <Layout title="دوره‌های ارزیابی"><div className="loading-center"><div className="spinner" /></div></Layout>;
+
+  const { current, history } = data;
 
   return (
-    <Layout title="مدیریت سال / ماه / هفته" subtitle="تعیین دوره فعال برای تمام مسئولان">
-      <form className="card mb-4" onSubmit={setActive}>
-        <div className="grid grid-3">
-          <div className="field">
-            <label>سال</label>
-            <input type="number" value={year} onChange={(e) => setYear(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>ماه</label>
-            <select value={month} onChange={(e) => setMonth(e.target.value)}>
-              {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label>هفته</label>
-            <select value={week} onChange={(e) => setWeek(e.target.value)}>
-              {[1, 2, 3, 4, 5].map((w) => <option key={w} value={w}>هفته {w}</option>)}
-            </select>
+    <Layout
+      title="دوره‌های ارزیابی"
+      subtitle="سال/ماه/هفته دیگر به‌صورت خودکار محاسبه می‌شود و نیازی به تعیین دستی توسط ادمین نیست"
+    >
+      <div className="card mb-4">
+        <h3 style={{ marginTop: 0 }}>دوره فعلی (محاسبه خودکار)</h3>
+        <div className="grid grid-4">
+          <div className="stat-card"><div className="value">{current.Year}</div><div className="label">سال</div></div>
+          <div className="stat-card"><div className="value">{current.Month}</div><div className="label">ماه</div></div>
+          <div className="stat-card"><div className="value">{current.Week}</div><div className="label">هفته</div></div>
+          <div className="stat-card">
+            <div className="value" style={{ color: current.IsEvaluationDay ? 'var(--success)' : 'var(--warning)' }}>
+              {current.WeekdayFa}
+            </div>
+            <div className="label">{current.IsEvaluationDay ? 'روز مجاز ارزیابی برای Evaluatorها' : 'روز غیرمجاز برای Evaluatorها'}</div>
           </div>
         </div>
-        <button className="btn btn-primary" disabled={saving}>{saving ? 'در حال ثبت...' : 'تعیین به‌عنوان دوره فعال'}</button>
-      </form>
+        <div className="pill mt-3">
+          روزهای مجاز ثبت ارزیابی برای مسئولان: <strong>{current.AllowedDaysLabel}</strong>
+          &nbsp;— دسترسی ادمین همیشه و در همه روزها باز است.
+        </div>
+      </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>تاریخچه دوره‌ها</h3>
+        <h3 style={{ marginTop: 0 }}>تاریخچه دوره‌هایی که برایشان ارزیابی ثبت شده</h3>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>سال</th><th>ماه</th><th>هفته</th><th>وضعیت</th><th>تاریخ ایجاد</th></tr></thead>
+            <thead><tr><th>سال</th><th>ماه</th><th>هفته</th><th>تعداد ارزیابی</th><th>وضعیت</th></tr></thead>
             <tbody>
-              {periods.map((p) => (
-                <tr key={p.Period_ID}>
+              {history.map((p) => (
+                <tr key={`${p.Year}-${p.Month}-${p.Week}`}>
                   <td>{p.Year}</td><td>{p.Month}</td><td>{p.Week}</td>
-                  <td>{String(p.Is_Active) === 'true' ? <span className="badge badge-success">فعال</span> : <span className="badge badge-info">آرشیو</span>}</td>
-                  <td>{new Date(p.Created_At).toLocaleDateString('fa-IR')}</td>
+                  <td>{p.EvaluationCount}</td>
+                  <td>{p.Is_Current ? <span className="badge badge-success">دوره جاری</span> : <span className="badge badge-info">آرشیو</span>}</td>
                 </tr>
               ))}
+              {history.length === 0 && <tr><td colSpan={5} className="text-muted">هنوز هیچ ارزیابی‌ای ثبت نشده است.</td></tr>}
             </tbody>
           </table>
         </div>

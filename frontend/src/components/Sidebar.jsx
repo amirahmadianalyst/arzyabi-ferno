@@ -6,7 +6,7 @@ const ADMIN_LINKS = [
   { to: '/admin/evaluations', label: 'ارزیابی‌ها' },
   { to: '/admin/employees', label: 'پرسنل' },
   { to: '/admin/users', label: 'مسئولان' },
-  { to: '/admin/periods', label: 'سال / ماه / هفته' },
+  { to: '/admin/periods', label: 'دوره‌های ارزیابی' },
   { to: '/admin/bonus', label: 'پاداش / جریمه' },
   { to: '/admin/export', label: 'دانلود Excel' },
 ];

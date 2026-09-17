@@ -3,6 +3,7 @@ const { readSheet, appendRows, updateRowByKey, newId } = require('../storage/exc
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { FORMS, MASTER_WEIGHTS } = require('../config/formsConfig');
 const { computeFormScore, computeMasterScore } = require('../utils/scoring');
+const { getCurrentPeriodInfo } = require('../utils/persianDate');
 
 const router = express.Router();
 
@@ -32,10 +33,28 @@ router.get('/check-duplicate', requireAuth, async (req, res) => {
 // ثبت ارزیابی جدید
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { Employee_ID, Employee_Name, Department, Form_ID, Year, Month, Week, Notes, Scores } = req.body;
-    if (!Employee_ID || !Department || !Form_ID || !Year || !Month || !Week || !Scores) {
+    const { Employee_ID, Employee_Name, Department, Form_ID, Notes, Scores } = req.body;
+    if (!Employee_ID || !Department || !Form_ID || !Scores) {
       return res.status(400).json({ error: 'اطلاعات ارسالی ناقص است' });
     }
+
+    // محاسبه خودکار دوره (سال/ماه/هفته) و بررسی روز مجاز ارزیابی.
+    // ادمین از این محدودیت مستثناست و همیشه دسترسی کامل دارد.
+    const current = getCurrentPeriodInfo();
+    let Year = current.Year, Month = current.Month, Week = current.Week;
+
+    if (req.user.role !== 'ADMIN') {
+      if (!current.IsEvaluationDay) {
+        return res.status(403).json({
+          error: `روزهای مجاز ثبت ارزیابی ${current.AllowedDaysLabel} است. امروز ${current.WeekdayFa} است.`,
+        });
+      }
+      // برای Evaluator، سال/ماه/هفته همیشه از سرور محاسبه می‌شود (قابل دستکاری از سمت کلاینت نیست)
+    } else if (req.body.Year && req.body.Month && req.body.Week) {
+      // ادمین در صورت نیاز می‌تواند دوره را صریحاً مشخص کند (مثلاً برای ثبت دستی/اصلاحی)
+      Year = req.body.Year; Month = req.body.Month; Week = req.body.Week;
+    }
+
     // بررسی Permission
     if (req.user.role !== 'ADMIN') {
       if (!req.user.departments.includes(Department)) {
