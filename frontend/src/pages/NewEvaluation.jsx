@@ -17,7 +17,8 @@ export default function NewEvaluation() {
   const [departments, setDepartments] = useState([]);
   const [forms, setForms] = useState([]);
   const [employees, setEmployees] = useState([]);
-
+  
+  const [deptProgress, setDeptProgress] = useState({});
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedForm, setSelectedForm] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -33,6 +34,7 @@ export default function NewEvaluation() {
     client.get('/periods/active').then((res) => setActivePeriod(res.data));
     client.get('/meta/departments').then((res) => setDepartments(res.data));
     client.get('/meta/forms').then((res) => setForms(res.data));
+    loadDeptProgress(); // <-- این خط جدید
   }, []);
 
   const availableFormsForDept = useMemo(
@@ -59,6 +61,16 @@ export default function NewEvaluation() {
       .then((res) => setEvaluatedIds(new Set(res.data.map((e) => e.Employee_ID))))
       .catch(() => setEvaluatedIds(new Set()));
   }
+
+  function loadDeptProgress() {
+  client.get('/dashboard/evaluator/departments').then((res) => {
+    const map = {};
+    res.data.forEach((d) => { map[d.department] = d.isComplete; });
+    setDeptProgress(map);
+  }).catch(() => {});
+  }
+  
+  
 
   function pickForm(formId, deptOverride) {
     const dept = deptOverride || selectedDept;
@@ -113,6 +125,7 @@ export default function NewEvaluation() {
       setStep(2);
       client.get(`/employees?department=${selectedDept}`).then((res) => setEmployees(res.data));
       loadEvaluatedIds(selectedDept, selectedForm);
+      loadDeptProgress(); // <-- این خط جدید
     } catch (err) {
       showToast(err.response?.data?.error || 'خطا در ثبت ارزیابی', 'error');
     } finally {
@@ -163,7 +176,13 @@ export default function NewEvaluation() {
           <h3 style={{ marginTop: 0 }}>انتخاب بخش</h3>
           <div className="dept-grid">
             {departments.map((d) => (
-              <div key={d.id} className="dept-tile" onClick={() => pickDepartment(d.id)}>
+              <div
+                key={d.id}
+                className={`dept-tile ${deptProgress[d.id] ? 'done' : ''}`}
+                onClick={() => pickDepartment(d.id)}
+                title={deptProgress[d.id] ? 'تمام پرسنل این بخش ارزیابی شده‌اند' : ''}
+              >
+                {deptProgress[d.id] && <span className="employee-tile-check">✓</span>}
                 {d.label}
               </div>
             ))}
