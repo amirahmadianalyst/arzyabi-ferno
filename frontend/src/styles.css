@@ -321,6 +321,13 @@ tbody tr:hover { background: var(--bg-hover); }
 }
 .dept-tile:hover { border-color: var(--primary); transform: translateY(-2px); }
 
+.dept-tile { position: relative; }
+.dept-tile.done {
+  background: rgba(62,207,142,.12);
+  border-color: var(--success);
+  color: var(--success);
+}
+
 .filters-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .filters-bar select, .filters-bar input { min-width: 130px; }
 
