@@ -10,7 +10,7 @@ export default function AdminUsers() {
   const [forms, setForms] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ Full_Name: '', Username: '', Password: '', Role: 'EVALUATOR', Departments: [], Forms: [] });
+  const [form, setForm] = useState({ Full_Name: '', Username: '', Password: '', Role: 'EVALUATOR', Departments: [], Forms: [], Bonus_Departments: [] });
 
   function load() {
     client.get('/users').then((res) => setUsers(res.data));
@@ -36,7 +36,7 @@ export default function AdminUsers() {
       await client.post('/users', form);
       showToast('کاربر جدید با موفقیت ایجاد شد.');
       setShowForm(false);
-      setForm({ Full_Name: '', Username: '', Password: '', Role: 'EVALUATOR', Departments: [], Forms: [] });
+      setForm({ Full_Name: '', Username: '', Password: '', Role: 'EVALUATOR', Departments: [], Forms: [], Bonus_Departments: [] });
       load();
     } catch (err) {
       showToast(err.response?.data?.error || 'خطا در ایجاد کاربر', 'error');
@@ -105,6 +105,17 @@ export default function AdminUsers() {
                   ))}
                 </div>
               </div>
+              <div className="field">
+                <label>بخش‌های مجاز برای ثبت پاداش/جریمه</label>
+                <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+                  {departments.map((d) => (
+                    <label key={d.id} className="pill" style={{ cursor: 'pointer' }}>
+                      <input type="checkbox" checked={form.Bonus_Departments.includes(d.id)} onChange={() => toggleMulti('Bonus_Departments', d.id)} />
+                      {' '}{d.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
             </>
           )}
 
@@ -116,7 +127,7 @@ export default function AdminUsers() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>بخش‌ها</th><th>فرم‌ها</th><th>وضعیت</th><th></th></tr>
+              <tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>بخش‌ها</th><th>فرم‌ها</th><th>بخش‌های پاداش/جریمه</th><th>وضعیت</th><th></th></tr>
             </thead>
             <tbody>
               {users.map((u) => (
@@ -126,6 +137,7 @@ export default function AdminUsers() {
                   <td>{u.Role === 'ADMIN' ? 'ادمین' : 'ارزیاب'}</td>
                   <td>{u.Departments}</td>
                   <td>{u.Forms}</td>
+                  <td>{u.Bonus_Departments}</td>
                   <td>
                     <span className={`badge ${String(u.Active) === 'true' ? 'badge-success' : 'badge-danger'}`}>
                       {String(u.Active) === 'true' ? 'فعال' : 'غیرفعال'}

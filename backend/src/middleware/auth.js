@@ -11,6 +11,7 @@ function signToken(user) {
       fullName: user.Full_Name,
       departments: safeParseList(user.Departments),
       forms: safeParseList(user.Forms),
+      bonusDepartments: safeParseList(user.Bonus_Departments),
     },
     JWT_SECRET,
     { expiresIn: '12h' }

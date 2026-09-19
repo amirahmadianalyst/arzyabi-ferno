@@ -150,6 +150,8 @@ function getCurrentPeriodInfo(date = new Date()) {
     Year: jy,
     Month: PERSIAN_MONTHS[jm - 1],
     Week: week,
+    Day: jd,
+    DateLabel: `${jd} ${PERSIAN_MONTHS[jm - 1]} ${jy}`,
     WeekdayShort: weekdayShort,
     WeekdayFa: WEEKDAY_FA[weekdayShort] || weekdayShort,
     IsEvaluationDay: isEvaluationDay,

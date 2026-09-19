@@ -22,6 +22,7 @@ export default function NewEvaluation() {
   const [selectedForm, setSelectedForm] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [evaluatedIds, setEvaluatedIds] = useState(new Set());
+  const [deptProgress, setDeptProgress] = useState({});
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
   const [notes, setNotes] = useState('');
@@ -33,7 +34,16 @@ export default function NewEvaluation() {
     client.get('/periods/active').then((res) => setActivePeriod(res.data));
     client.get('/meta/departments').then((res) => setDepartments(res.data));
     client.get('/meta/forms').then((res) => setForms(res.data));
+    loadDeptProgress();
   }, []);
+
+  function loadDeptProgress() {
+    client.get('/dashboard/evaluator/departments').then((res) => {
+      const map = {};
+      res.data.forEach((d) => { map[d.department] = d.isComplete; });
+      setDeptProgress(map);
+    }).catch(() => {});
+  }
 
   const availableFormsForDept = useMemo(
     () => forms.filter((f) => selectedDept && f.departments.includes(selectedDept)),
@@ -113,6 +123,7 @@ export default function NewEvaluation() {
       setStep(2);
       client.get(`/employees?department=${selectedDept}`).then((res) => setEmployees(res.data));
       loadEvaluatedIds(selectedDept, selectedForm);
+      loadDeptProgress();
     } catch (err) {
       showToast(err.response?.data?.error || 'خطا در ثبت ارزیابی', 'error');
     } finally {
@@ -163,7 +174,13 @@ export default function NewEvaluation() {
           <h3 style={{ marginTop: 0 }}>انتخاب بخش</h3>
           <div className="dept-grid">
             {departments.map((d) => (
-              <div key={d.id} className="dept-tile" onClick={() => pickDepartment(d.id)}>
+              <div
+                key={d.id}
+                className={`dept-tile ${deptProgress[d.id] ? 'done' : ''}`}
+                onClick={() => pickDepartment(d.id)}
+                title={deptProgress[d.id] ? 'تمام پرسنل این بخش ارزیابی شده‌اند' : ''}
+              >
+                {deptProgress[d.id] && <span className="employee-tile-check">✓</span>}
                 {d.label}
               </div>
             ))}

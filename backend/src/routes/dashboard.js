@@ -1,7 +1,7 @@
 const express = require('express');
 const { readSheet } = require('../storage/excelStorage');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { DEPARTMENTS } = require('../config/formsConfig');
+const { DEPARTMENTS, FORMS } = require('../config/formsConfig');
 const { getCurrentPeriodInfo } = require('../utils/persianDate');
 
 const router = express.Router();
@@ -74,6 +74,38 @@ router.get('/evaluator', requireAuth, async (req, res) => {
       .sort((a, b) => (a.Created_At < b.Created_At ? 1 : -1))
       .slice(0, 5),
   });
+});
+
+// وضعیت تکمیل ارزیابی هر بخش برای Evaluator جاری، در دوره فعلی (برای سبز شدن دکمه بخش)
+router.get('/evaluator/departments', requireAuth, async (req, res) => {
+  const [evaluations, employees] = await Promise.all([
+    readSheet('Evaluations'), readSheet('Employees'),
+  ]);
+  const activePeriod = getCurrentPeriodInfo();
+
+  const myPeriodEvals = evaluations.filter((e) =>
+    e.Evaluator_ID === req.user.id &&
+    String(e.Year) === String(activePeriod.Year) &&
+    e.Month === activePeriod.Month &&
+    String(e.Week) === String(activePeriod.Week)
+  );
+
+  const result = (req.user.departments || []).map((deptId) => {
+    const deptEmployees = employees.filter((e) => String(e.Active) !== 'false' && e.Department === deptId);
+    // فقط فرم‌هایی که هم به این کاربر تعلق دارند و هم برای این بخش تعریف شده‌اند
+    const applicableForms = (req.user.forms || []).filter((formId) => FORMS[formId] && FORMS[formId].departments[deptId]);
+    const expected = deptEmployees.length * applicableForms.length;
+    const completed = myPeriodEvals.filter((e) => e.Department === deptId && applicableForms.includes(e.Form_ID)).length;
+    return {
+      department: deptId,
+      employeeCount: deptEmployees.length,
+      expected,
+      completed,
+      isComplete: expected > 0 && completed >= expected,
+    };
+  });
+
+  res.json(result);
 });
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 const { FORMS, DEPARTMENTS } = require('../config/formsConfig');
-const { EVALUATOR_ROLES, BONUS_ROLES } = require('../config/referenceData');
+const { EVALUATOR_ROLES, BONUS_UNIT_AMOUNT } = require('../config/referenceData');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -44,8 +44,13 @@ router.get('/evaluator-roles', requireAuth, (req, res) => {
   res.json(Object.values(EVALUATOR_ROLES));
 });
 
-router.get('/bonus-roles', requireAuth, (req, res) => {
-  res.json(Object.values(BONUS_ROLES));
+// بخش‌هایی که کاربر جاری برای ثبت پاداش/جریمه به آن‌ها دسترسی دارد
+router.get('/bonus-departments', requireAuth, (req, res) => {
+  let depts = Object.values(DEPARTMENTS);
+  if (req.user.role !== 'ADMIN') {
+    depts = depts.filter((d) => (req.user.bonusDepartments || []).includes(d.id));
+  }
+  res.json({ departments: depts, unitAmount: BONUS_UNIT_AMOUNT });
 });
 
 module.exports = router;

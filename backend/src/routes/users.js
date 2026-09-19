@@ -11,7 +11,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 });
 
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
-  const { Full_Name, Username, Password, Role, Departments, Forms } = req.body;
+  const { Full_Name, Username, Password, Role, Departments, Forms, Bonus_Departments } = req.body;
   if (!Full_Name || !Username || !Password || !Role) {
     return res.status(400).json({ error: 'اطلاعات کاربر ناقص است' });
   }
@@ -27,6 +27,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
     Role,
     Departments: Array.isArray(Departments) ? Departments.join(',') : (Departments || ''),
     Forms: Array.isArray(Forms) ? Forms.join(',') : (Forms || ''),
+    Bonus_Departments: Array.isArray(Bonus_Departments) ? Bonus_Departments.join(',') : (Bonus_Departments || ''),
     Active: 'true',
     Created_At: new Date().toISOString(),
   };
@@ -42,6 +43,7 @@ router.patch('/:id', requireAuth, requireAdmin, async (req, res) => {
   }
   if (Array.isArray(updates.Departments)) updates.Departments = updates.Departments.join(',');
   if (Array.isArray(updates.Forms)) updates.Forms = updates.Forms.join(',');
+  if (Array.isArray(updates.Bonus_Departments)) updates.Bonus_Departments = updates.Bonus_Departments.join(',');
   const ok = await updateRowByKey('Users', 'User_ID', req.params.id, updates);
   if (!ok) return res.status(404).json({ error: 'کاربر یافت نشد' });
   res.json({ success: true });
